@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chateau Frontage Planner</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.184.0/build/three.module.js",
+    "three/addons/controls/OrbitControls.js": "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js",
+    "three/addons/exporters/OBJExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js",
+    "three/addons/exporters/GLTFExporter.js": "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js"
+  },
+  "integrity": {
+    "https://unpkg.com/three@0.184.0/build/three.module.js": "sha384-8FCZ1eVO6it4+pbec2aDtnTrwjWXZLJRC+MAGCIPDgsYnUrl/E0A2YlF8ioMKI/J",
+    "https://unpkg.com/three@0.184.0/build/three.core.js": "sha384-dw2ooPewaEIrAgl6oFDBmmBWCE9oW9LxRGcfwZ0hLvEprzo202wXl7vCYHRlSnOT",
+    "https://unpkg.com/three@0.184.0/examples/jsm/controls/OrbitControls.js": "sha384-4rziNxOBZKQ69i+w+f89KJ55TCYquwchVbByQwmaOeIOXdOU2PLDn3kOfXHwIJC9",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/OBJExporter.js": "sha384-nbwtoZENJD3Vq+ACK0CuGQdPMuDWHkamC2KJD70EV5nfg6jQjfppKOea07YJN+N3",
+    "https://unpkg.com/three@0.184.0/examples/jsm/exporters/GLTFExporter.js": "sha384-VofkvpG6HERhFCYbsUOHeNXBCqID2nfqkQqnVzE1jc/oPcz+qJ13ADdXH08hE+cQ"
+  }
+}
+</script>
+<style>
+html,body{margin:0;height:100%;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#26241f;background:#f3f1ec}
+a{color:#6b5a3a}a:hover{color:#3d321e}
+*{box-sizing:border-box}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 320px;height:100vh}
+.viewer{position:relative;min-height:0}
+three-d-stage{width:100%;height:100%;display:block}
+three-d-stage:not(:defined){visibility:hidden}
+.hint{position:absolute;left:14px;top:14px;font-size:12px;color:#5f5a50;background:rgba(250,249,246,.85);padding:6px 10px;border-radius:6px;pointer-events:none}
+.panel{overflow:auto;border-left:1px solid #dcd8cf;background:#faf9f6;padding:18px 18px 28px;display:flex;flex-direction:column;gap:20px}
+h1{font-size:17px;margin:0;font-weight:600}
+.sub{font-size:12.5px;color:#6d685e;margin-top:5px;line-height:1.45;text-wrap:pretty}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:#7c766a;margin:0 0 8px;font-weight:600}
+.seg{display:flex;gap:4px;background:#ece9e2;padding:3px;border-radius:8px}
+.seg button{flex:1;border:0;background:transparent;padding:8px 6px;font:inherit;font-size:13px;border-radius:6px;cursor:pointer;color:#4a463e}
+.seg button.on{background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12);color:#1d1b17;font-weight:600}
+.row{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;padding:5px 0;cursor:pointer;line-height:1.3}
+.row input{accent-color:#6b5a3a;width:16px;height:16px;margin:1px 0 0;flex:none}
+.num{font-variant-numeric:tabular-nums;color:#9a9486;width:18px;font-size:12px;flex:none;padding-top:1px}
+.desc{display:block;font-size:11.5px;color:#8a8478;margin-top:2px}
+.dis{opacity:.4;pointer-events:none}
+.cams{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cams button{border:1px solid #d9d5cc;background:#fff;border-radius:7px;padding:8px;font:inherit;font-size:13px;cursor:pointer;color:#3a362f}
+.cams button:hover{border-color:#a89c84}
+.sw{display:flex;gap:10px}
+.sw button{display:flex;flex-direction:column;align-items:center;gap:5px;border:0;background:none;cursor:pointer;font:inherit;font-size:11.5px;color:#5f5a50;padding:0}
+.sw i{display:block;width:40px;height:40px;border-radius:8px;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+.sw button.on i{border-color:#26241f}
+.sl{display:flex;align-items:center;gap:10px;font-size:13px}
+.sl input{flex:1;accent-color:#6b5a3a}
+.sl output{font-variant-numeric:tabular-nums;width:48px;text-align:right;color:#4a463e}
+.stats{font-size:13px;line-height:1.7;background:#f0ede6;border-radius:8px;padding:10px 12px}
+.stats b{font-weight:600;font-variant-numeric:tabular-nums}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;font-size:11.5px;background:rgba(255,255,255,.93);border:1px solid #cfc9bd;padding:3px 7px;border-radius:5px;white-space:nowrap;color:#2c2a25}
+#tip{position:absolute;pointer-events:none;background:#26241f;color:#fff;font-size:12px;line-height:1.35;padding:6px 9px;border-radius:6px;display:none;max-width:250px}
+.cp{display:flex;gap:14px;margin-top:10px;font-size:12.5px;color:#5f5a50}
+.cp label{display:flex;align-items:center;gap:6px}
+.cp input{width:34px;height:26px;border:1px solid #d9d5cc;border-radius:5px;padding:1px;background:#fff}
+.ci{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:5px 0;border-bottom:1px solid #ebe8e1}
+.ci span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap;color:#4a463e}
+.ci.tot{font-weight:600;border-bottom:0;padding-top:8px}
+.note{font-size:12px;color:#7c766a;line-height:1.45;text-wrap:pretty}
+@media (max-width:760px){.app{grid-template-columns:1fr;grid-template-rows:62vh auto;height:auto}.panel{border-left:0;border-top:1px solid #dcd8cf}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="viewer">
+    <three-d-stage name="chateau_frontage" background="#e7e9e8"></three-d-stage>
+    <div id="labels"></div><div id="tip"></div>
+    <div class="hint">Drag to orbit · scroll to zoom · right-drag to pan · hover for names</div>
+  </div>
+  <aside class="panel">
+    <div>
+      <h1>Front Landscape Planner</h1>
+      <div class="sub">Concepts for making a shallow front yard feel grander. Turn ideas on and off; compare with today's layout.</div>
+    </div>
+    <div>
+      <h2>View</h2>
+      <div class="seg" id="mode"><button data-v="before">Before</button><button data-v="after">After</button></div>
+      <div style="height:8px"></div>
+      <div class="seg" id="time"><button data-v="day">Day</button><button data-v="night">Night</button></div>
+    </div>
+    <div>
+      <h2>Camera</h2>
+      <div class="cams" id="cams">
+        <button data-c="street">From street</button>
+        <button data-c="sidewalk">From sidewalk</button>
+        <button data-c="corner">Right corner</button>
+        <button data-c="plan">Top-down plan</button>
+      </div>
+    </div>
+    <div id="ideasWrap">
+      <h2>Ideas</h2>
+      <div id="ideas"></div>
+    </div>
+    <div id="optsWrap">
+      <h2>Driveway</h2>
+      <div class="sl"><span>Extend left</span><input id="ext" type="range" min="0" max="4" step="0.5"><output id="extOut"></output></div>
+      <label class="row" style="margin-top:6px"><input type="checkbox" id="blvd"><span>Interlock between sidewalk and curb<span class="desc">Needs city approval — turn off to keep concrete</span></span></label>
+      <div style="height:12px"></div>
+      <h2>Paver colour</h2>
+      <div class="sw" id="pav"></div>
+      <div class="cp"><label>Field <input type="color" id="cf"></label><label>Border <input type="color" id="cb"></label></div>
+    </div>
+    <div>
+      <h2>Scene</h2>
+      <div class="sl"><span>Sun angle</span><input id="sun" type="range" min="-180" max="180" step="5"><output id="sunOut"></output></div>
+      <label class="row" style="margin-top:6px"><input type="checkbox" id="lines"><span>Property lines</span></label>
+      <label class="row"><input type="checkbox" id="neigh"><span>Neighbouring houses</span></label>
+      <label class="row"><input type="checkbox" id="meas"><span>Measurement labels</span></label>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div><h2>Rough cost</h2><div id="cost"></div></div>
+    <div class="note">Dimensions are estimated from photos: Lot 40 ft wide at the sidewalk (per you); porch ~13 ft back from it (estimated). Ground falls 1.5 ft left→right and 1 ft from house to sidewalk. Costs are rough 2026 Ontario ballparks — get quotes.</div>
+  </aside>
+</div>
+<script src="three-d-stage.js"></script>
+<script type="module">
+const stage = document.querySelector('three-d-stage');
+const { THREE } = await stage.ready;
+const FT = 0.3048, DS = THREE.DoubleSide;
+const H = (x, z) => -0.0375 * x - 0.052 * z;
+
+const SKEY = 'chateau-planner-v1';
+const DEF = { mode:'after', night:false, neigh:true, lines:true, meas:true, cf:'#c9c2b5', cb:'#5f5c58', blvd:true, ext:2.5, paver:'limestone', sun:-35,
+  ideas:{ forecourt:1, herr:1, medal:1, flare:1, bands:1, steps:1, piers:1, urns:1, terrace:1, parterre:1, evergreens:1, lighting:1 } };
+let st;
+try { const s = JSON.parse(localStorage.getItem(SKEY) || '{}'); st = { ...DEF, ...s, ideas:{ ...DEF.ideas, ...(s.ideas||{}) } }; }
+catch (e) { st = JSON.parse(JSON.stringify(DEF)); }
+const save = () => localStorage.setItem(SKEY, JSON.stringify(st));
+
+function rng(a){ return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function canvasTex(draw, rep){
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  draw(c.getContext('2d'));
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(1/rep, 1/rep); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+const U = 512/12;
+const herrTex = canvasTex(g => {
+  g.fillStyle = '#8f8b84'; g.fillRect(0,0,512,512); const r = rng(7);
+  const b = (x,y,w,h) => { const s = 222 + r()*33 | 0; g.fillStyle = `rgb(${s},${s-2},${s-6})`; g.fillRect(x*U+1.5, y*U+1.5, w*U-3, h*U-3); };
+  for (let m=-5; m<=5; m++) for (let k=-18; k<=30; k++){ b(k+4*m, k, 2, 1); b(k+2+4*m, k-1, 1, 2); }
+}, 4);
+const bondTex = canvasTex(g => {
+  g.fillStyle = '#8f8b84'; g.fillRect(0,0,512,512); const r = rng(11);
+  for (let y=0; y<12; y++) for (let x=-1; x<7; x++){ const s = 222 + r()*33 | 0; g.fillStyle = `rgb(${s},${s-2},${s-6})`; g.fillRect((x*2+(y%2))*U+1.5, y*U+1.5, 2*U-3, U-3); }
+}, 4);
+const ringTex = canvasTex(g => {
+  g.fillStyle = '#8f8b84'; g.fillRect(0,0,512,512); const r = rng(5); const step = 30;
+  g.fillStyle = '#ddd9d1'; g.beginPath(); g.arc(256,256,step*0.9,0,Math.PI*2); g.fill();
+  for (let i=1; i*step < 256; i++){
+    const rad = i*step + step/2, n = Math.max(6, Math.round(2*Math.PI*rad/60));
+    g.lineWidth = step - 3;
+    for (let j=0; j<n; j++){ const s = 222 + r()*33 | 0; g.strokeStyle = `rgb(${s},${s-2},${s-6})`;
+      const a0 = j/n*Math.PI*2, a1 = (j+1)/n*Math.PI*2; g.beginPath(); g.arc(256,256,rad,a0+0.012,a1-0.012); g.stroke(); }
+  }
+}, 1);
+ringTex.repeat.set(1,1); ringTex.wrapS = ringTex.wrapT = THREE.ClampToEdgeWrapping;
+const walkTex = canvasTex(g => {
+  g.fillStyle = '#d6d3cc'; g.fillRect(0,0,512,512); const r = rng(3);
+  for (let i=0; i<2500; i++){ const s = 196 + r()*40 | 0; g.fillStyle = `rgba(${s},${s},${s-4},.35)`; g.fillRect(r()*512, r()*512, 2, 2); }
+  g.fillStyle = '#9d9a94'; g.fillRect(0,0,4,512);
+}, 5);
+
+const M = (name, color, o={}) => { const m = new THREE.MeshStandardMaterial({ color, roughness:o.r ?? .85, metalness:o.m ?? 0, side:o.side ?? THREE.FrontSide, map:o.map ?? null }); m.name = name; return m; };
+const mat = {
+  lawn:M('lawn',0x6c9846,{r:1,side:DS}), mulch:M('mulch',0x4b3627,{r:1,side:DS}),
+  stone:M('limestone_veneer',0xcfc7b8), stucco:M('stucco',0xe9e4da), trim:M('white_trim',0xf5f3ee,{r:.6}),
+  glass:M('window_glass',0x2a3036,{r:.25,m:.2}), roof:M('roof_shingle',0x4a4d52,{r:.95}), metal:M('black_metal',0x1d1d1e,{r:.5,m:.3}),
+  asphalt:M('asphalt',0x3b3b3d,{r:1,side:DS}), road:M('road',0x55565a,{r:1,side:DS}), concrete:M('concrete',0xc3c0b9,{r:.95,side:DS}),
+  walk:M('sidewalk_concrete',0xffffff,{r:.95,side:DS,map:walkTex}), precast:M('precast_steps',0xd9d4ca,{r:.8}),
+  field:M('paver_field',0xc4bdb0,{r:.9,side:DS,map:herrTex}), border:M('paver_border',0x5f5c58,{r:.9,side:DS,map:bondTex}),
+  medal:M('paver_medallion',0xc4bdb0,{r:.9,side:DS,map:ringTex}), wallStone:M('wall_stone',0xbfb5a3,{r:.95}), cap:M('wall_cap',0xe2ddd2,{r:.7}),
+  box:M('boxwood',0x2f5a2c,{r:1}), ever:M('evergreen',0x2b472d,{r:1}), hydr:M('hydrangea',0xf0eee2,{r:1}), leaf:M('foliage',0x4f7a3a,{r:1}),
+  urn:M('urn_cast_stone',0x3a3a3b,{r:.7}), lantern:M('lantern_glass',0x3a3a36,{r:.3}), elec:M('utility_box',0x3f6b44,{r:.6}),
+  bark:M('bark',0x5a4636,{r:1}), line:M('property_line',0xe0662e,{r:.8,side:DS}),
+  nDark:M('neighbour_dark',0x45474b), nStone:M('neighbour_stone',0x6d6861), nBrick:M('neighbour_brick',0xa4563f), nRoof:M('neighbour_roof',0x55585d,{r:.95})
+};
+mat.line.emissive.set(0xe0662e); mat.line.emissiveIntensity = .25;
+const PAL = { limestone:{ f:0xc9c2b5, b:0x5f5c58, label:'Limestone' }, sand:{ f:0xd2bd9a, b:0x6e5e4b, label:'Sandstone' }, charcoal:{ f:0x6d6d70, b:0xcbc4b6, label:'Charcoal' } };
+
+function shade(m){ m.castShadow = m.receiveShadow = true; return m; }
+function box(p, name, m, x0,x1,y0,y1,z0,z1){ const o = new THREE.Mesh(new THREE.BoxGeometry(x1-x0, y1-y0, z1-z0), m); o.name = name; o.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2); p.add(shade(o)); return o; }
+function onGround(geo, off, fixedY){
+  const a = geo.attributes.position;
+  for (let i=0; i<a.count; i++){ const x = a.getX(i), z = -a.getY(i); a.setXYZ(i, x, (fixedY ?? H(x,z)) + off, z); }
+  geo.computeVertexNormals(); return geo;
+}
+function flat(p, name, pts, off, m, fixedY){
+  const s = new THREE.Shape(pts.map(([x,z]) => new THREE.Vector2(x, -z)));
+  const o = new THREE.Mesh(onGround(new THREE.ShapeGeometry(s), off, fixedY), m); o.name = name; o.receiveShadow = true; p.add(o); return o;
+}
+function disc(p, name, cx, cz, r, off, m){
+  const g = new THREE.CircleGeometry(r, 64); g.translate(cx, -cz, 0);
+  const o = new THREE.Mesh(onGround(g, off), m); o.name = name; o.receiveShadow = true; p.add(o); return o;
+}
+function vstrip(p, name, x0, x1, z, top, bot, m){
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([x0,H(x0,z)+top,z, x1,H(x1,z)+top,z, x1,H(x1,z)+bot,z, x0,H(x0,z)+bot,z], 3));
+  g.setIndex([0,2,1,0,3,2]); g.computeVertexNormals();
+  const o = new THREE.Mesh(g, m); o.name = name; p.add(shade(o)); return o;
+}
+function inset(pts, d){
+  const n = pts.length; let a = 0;
+  for (let i=0;i<n;i++){ const [x0,z0]=pts[i],[x1,z1]=pts[(i+1)%n]; a += x0*z1 - x1*z0; }
+  const s = a > 0 ? 1 : -1;
+  const L = pts.map((p,i) => { const q = pts[(i+1)%n]; let dx=q[0]-p[0], dz=q[1]-p[1]; const l=Math.hypot(dx,dz); dx/=l; dz/=l;
+    return { px:p[0] + s*(-dz)*d, pz:p[1] + s*dx*d, dx, dz }; });
+  return L.map((l2,i) => { const l1 = L[(i-1+n)%n]; const den = l1.dx*l2.dz - l1.dz*l2.dx;
+    const t = ((l2.px-l1.px)*l2.dz - (l2.pz-l1.pz)*l2.dx) / den; return [l1.px + l1.dx*t, l1.pz + l1.dz*t]; });
+}
+const area = pts => { let a=0; for (let i=0;i<pts.length;i++){ const [x0,z0]=pts[i],[x1,z1]=pts[(i+1)%pts.length]; a += x0*z1-x1*z0; } return Math.abs(a/2); };
+function rail(p, name, ax, a0, a1, fixed, y, h){ // ax: 'x' runs along x at z=fixed; 'z' along z at x=fixed
+  const seg = (u0,u1,y0,y1,t) => ax==='x' ? box(p,name,mat.metal,u0,u1,y0,y1,fixed-t,fixed+t) : box(p,name,mat.metal,fixed-t,fixed+t,y0,y1,u0,u1);
+  seg(a0,a1,y+h-.15,y+h,.12); seg(a0,a1,y+.25,y+.35,.06);
+  const n = Math.round((a1-a0)/.45); for (let i=0;i<=n;i++){ const u = a0+(a1-a0)*i/n; seg(u-.04,u+.04,y+.25,y+h-.1,.04); }
+}
+function ball(p, name, m, x, y, z, r, sy=1){ const o = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 20), m); o.name = name; o.scale.y = sy; o.position.set(x,y,z); p.add(shade(o)); return o; }
+function cone(p, name, m, x, y, z, r, h){ const o = new THREE.Mesh(new THREE.ConeGeometry(r, h, 32), m); o.name = name; o.position.set(x, y+h/2, z); p.add(shade(o)); return o; }
+function cyl(p, name, m, x, y, z, r, h){ const o = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 32), m); o.name = name; o.position.set(x, y+h/2, z); p.add(shade(o)); return o; }
+function hip(p, name, m, cx, cz, w, d, y, h){ const g = new THREE.ConeGeometry(Math.SQRT1_2, 1, 4, 1); g.rotateY(Math.PI/4); const o = new THREE.Mesh(g, m); o.name = name; o.scale.set(w, h, d); o.position.set(cx, y+h/2, cz); p.add(shade(o)); return o; }
+function hedge(p, x0,z0,x1,z1,w,h,y){ const dx=x1-x0, dz=z1-z0, len=Math.hypot(dx,dz);
+  const o = new THREE.Mesh(new THREE.BoxGeometry(len+w, h+.4, w), mat.box); o.name = 'boxwood_hedge'; o.position.set((x0+x1)/2, y+(h-.4)/2, (z0+z1)/2); o.rotation.y = -Math.atan2(dz,dx); p.add(shade(o)); }
+function urn(p, x, z){
+  const y = H(x,z);
+  const pts = [[0,0],[.85,0],[.85,.25],[.45,.4],[.4,.9],[.75,1.5],[1.05,2.25],[1.15,2.45],[0,2.45]].map(([r,h]) => new THREE.Vector2(r,h));
+  const o = new THREE.Mesh(new THREE.LatheGeometry(pts, 40), mat.urn); o.name = 'urn'; o.position.set(x,y,z); p.add(shade(o));
+  cone(p,'topiary_cone',mat.box,x,y+2.3,z,.95,3.6);
+}
+function evergreen(p, x, y, z){ cone(p,'emerald_cedar',mat.ever,x,y-.2,z,1.45,11.5); }
+function hydrangea(p, x, y, z, r=.95){ ball(p,'hydrangea_foliage',mat.leaf,x,y+.35,z,r*1.02,.6); ball(p,'hydrangea_bloom',mat.hydr,x,y+r*.75,z,r,.75); }
+
+// ---------- static: house, streetscape, neighbours ----------
+function buildHouse(){
+  const h = new THREE.Group(); h.name = 'house';
+  box(h,'garage_wing_stone',mat.stone,0,13,-3,10.3,-32,-2); box(h,'garage_wing_stucco',mat.stucco,0,13,10.3,21.6,-32,-2);
+  box(h,'main_stone',mat.stone,13,30,-3,10.5,-32,0); box(h,'main_stucco',mat.stucco,13,30,10.5,21.6,-32,0);
+  box(h,'belt_course',mat.trim,-.15,13,10.1,10.6,-32.1,-1.85); box(h,'belt_course',mat.trim,13,30.15,10.3,10.8,-32.1,.15);
+  box(h,'eave',mat.trim,-.9,30.9,21.5,22.3,-32.9,.9);
+  hip(h,'main_roof',mat.roof,15,-16,32.8,34.8,22.3,8.5);
+  // front bay above portico
+  box(h,'bay_stucco',mat.stucco,15.5,26.5,12.5,24.6,0,1); box(h,'bay_quoin',mat.trim,15.3,16.2,12.5,24.6,0,1.15); box(h,'bay_quoin',mat.trim,25.8,26.7,12.5,24.6,0,1.15);
+  const arch = new THREE.Mesh(new THREE.CylinderGeometry(5.8,5.8,1.2,48,1,false,-Math.PI/2,Math.PI), mat.trim); arch.name='bay_arched_parapet';
+  arch.rotation.x = Math.PI/2; arch.scale.set(1,1,.32); arch.position.set(21,24.6,.5); h.add(shade(arch));
+  box(h,'window_trim',mat.trim,18.4,23.6,13.3,20.8,.95,1.05);
+  const at = new THREE.Mesh(new THREE.CylinderGeometry(2.6,2.6,.1,40,1,false,-Math.PI/2,Math.PI), mat.trim); at.rotation.x = Math.PI/2; at.position.set(21,20.8,1); at.name='window_trim'; h.add(at);
+  box(h,'arched_window',mat.glass,18.8,23.2,13.7,20.8,1,1.12);
+  const ag = new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,.12,40,1,false,-Math.PI/2,Math.PI), mat.glass); ag.rotation.x = Math.PI/2; ag.position.set(21,20.8,1.06); ag.name='arched_window'; h.add(ag);
+  box(h,'window_mullion',mat.trim,20.93,21.07,13.7,22.9,1.12,1.18);
+  // upper windows
+  box(h,'window_trim',mat.trim,2.6,10.4,12.8,19.8,-2,-1.88); box(h,'window',mat.glass,3,10,13.2,19.4,-1.9,-1.8); box(h,'window_mullion',mat.trim,6.43,6.57,13.2,19.4,-1.8,-1.75);
+  box(h,'window_trim',mat.trim,27,29.6,12.8,19.8,0,.12); box(h,'window',mat.glass,27.3,29.3,13.2,19.4,.1,.18);
+  // garage
+  box(h,'garage_trim',mat.trim,1.1,11.9,-.4,8.1,-2,-1.9); box(h,'garage_door',mat.trim,1.5,11.5,-.4,7.7,-1.95,-1.82);
+  for (let y of [1.6,3.6,5.6]) box(h,'garage_panel_line',mat.stone,1.6,11.4,y,y+.06,-1.82,-1.8);
+  box(h,'garage_door_windows',mat.glass,1.9,11.1,6.3,7.2,-1.82,-1.78);
+  for (let x of [.55,12.45]) box(h,'coach_light',mat.metal,x-.3,x+.3,6,7.4,-1.9,-1.4);
+  // entry
+  box(h,'front_door',mat.glass,15,18.4,1.85,9.8,0,.12); box(h,'door_trim',mat.trim,14.7,18.7,9.8,10.2,0,.15);
+  box(h,'front_window',mat.glass,19.8,26.8,2.6,9.6,0,.12); box(h,'window_trim',mat.trim,19.5,27.1,9.6,9.95,0,.15);
+  // porch + portico
+  box(h,'porch_base_stone',mat.stone,13,28,-3,1.6,0,6); box(h,'porch_slab',mat.trim,12.9,28.1,1.6,1.85,0,6.2);
+  for (let x of [14,27]){ box(h,'column_base',mat.trim,x-.7,x+.7,1.85,2.3,4.5,5.9); cyl(h,'column',mat.trim,x,2.3,5.2,.45,8.6); box(h,'column_capital',mat.trim,x-.65,x+.65,10.9,11.35,4.55,5.85); box(h,'pilaster',mat.trim,x-.5,x+.5,1.85,11.35,0,.4); }
+  box(h,'portico_entablature',mat.trim,12.8,28.2,11.35,12.6,-.1,6.3);
+  rail(h,'balcony_railing','x',13,28,6.1,12.6,3.2); rail(h,'balcony_railing','z',1,6.1,13.1,12.6,3.2); rail(h,'balcony_railing','z',1,6.1,27.9,12.6,3.2);
+  rail(h,'porch_railing','x',19.3,26.3,5.8,1.85,3); rail(h,'porch_railing','z',.5,4.4,27.8,1.85,3);
+  // side windows
+  for (let z of [-4.5,-12.5,-22.5]){ box(h,'side_window',mat.glass,30,30.12,2.8,7.6,z-1.4,z+1.4); box(h,'side_window',mat.glass,30,30.12,13.2,18.8,z-1.4,z+1.4); }
+  return h;
+}
+function buildStreet(){
+  const s = new THREE.Group(); s.name = 'streetscape';
+  flat(s,'lawn',[[-70,-50],[100,-50],[100,19],[-70,19]],0,mat.lawn);
+  flat(s,'boulevard_lawn',[[-70,24],[100,24],[100,31.6],[-70,31.6]],0,mat.lawn);
+  flat(s,'sidewalk',[[-70,19],[100,19],[100,24],[-70,24]],.1,mat.walk);
+  flat(s,'curb',[[-70,31.6],[100,31.6],[100,32.5],[-70,32.5]],.15,mat.concrete);
+  vstrip(s,'curb_face',-70,100,32.5,.15,-.45,mat.concrete);
+  flat(s,'road',[[-70,32.5],[100,32.5],[100,85],[-70,85]],-.45,mat.road);
+  box(s,'hydro_box',mat.elec,36,37.5,H(36.7,17.9)-.4,H(36.7,17.9)+3,17.2,18.6);
+  const tx = 25, tz = 28, ty = H(tx,tz);
+  disc(s,'tree_mulch_ring',tx,tz,2,.05,mat.mulch); cyl(s,'boulevard_tree_trunk',mat.bark,tx,ty,tz,.13,8.5); ball(s,'boulevard_tree_canopy',mat.leaf,tx,ty+9.6,tz,1.9,1.1);
+  return s;
+}
+function buildLines(){
+  const g = new THREE.Group(); g.name = 'property_lines';
+  flat(g,'property_line_left',[[-2.62,-32],[-2.38,-32],[-2.38,19],[-2.62,19]],.115,mat.line);
+  flat(g,'property_line_right',[[37.38,19],[37.62,19],[32.62,-32],[32.38,-32]],.115,mat.line);
+  return g;
+}
+function buildNeighbours(){
+  const n = new THREE.Group(); n.name = 'neighbours';
+  box(n,'left_house_stone',mat.nStone,-40,-8,-3,10,-34,-1); box(n,'left_house_upper',mat.nDark,-40,-8,10,22,-34,-1.5); box(n,'left_house_roof',mat.nRoof,-40.8,-7.2,22,23,-34.8,-.7);
+  box(n,'left_garage_door',mat.nDark,-17.5,-9.5,H(-13,-1)-.2,8,-1.02,-.9);
+  for (let x of [-36,-28,-20,-12.5]) box(n,'left_window',mat.glass,x,x+5,13,19,-1.52,-1.4);
+  flat(n,'left_driveway',[[-18,-1],[-9,-1],[-9,19],[-18,19]],.06,mat.asphalt);
+  flat(n,'left_apron',[[-18,24],[-9,24],[-9,31.6],[-18,31.6]],.06,mat.concrete);
+  box(n,'right_house_brick',mat.nBrick,44,72,-4,20,-38,-8); box(n,'right_eave',mat.trim,43.3,72.7,19.6,20.3,-38.7,-7.3);
+  hip(n,'right_house_roof',mat.nRoof,58,-23,30,32,20.3,8);
+  for (let x of [46,53]) { box(n,'right_window',mat.glass,x,x+4,4,9,-8,-7.9); box(n,'right_window',mat.glass,x,x+4,12.5,17.5,-8,-7.9); }
+  box(n,'right_garage_door',mat.trim,61,70,H(65,-8)-.2,7.5,-8,-7.88);
+  flat(n,'right_driveway',[[60.5,-8],[70.5,-8],[70.5,19],[60.5,19]],.06,mat.asphalt);
+  return n;
+}
+
+// ---------- design (rebuilt on every change) ----------
+const T = { y:-.45 }; // terrace soil level (ft)
+const inTerrace = (x,z) => (x>20.5 && x<34 && z>6 && z<13) || (x>28 && x<34 && z>-4 && z<=6);
+const lights = [];
+function build(){
+  const g = new THREE.Group(); g.name = 'landscape_design';
+  const after = st.mode === 'after', I = k => after && !!st.ideas[k];
+  const L = after ? -st.ext : 0, pal = st.paver === 'custom' ? { f:st.cf, b:st.cb } : PAL[st.paver];
+  mat.field.color.set(pal.f); mat.border.color.set(pal.b); mat.medal.color.set(pal.f);
+  const want = I('herr') ? herrTex : bondTex; if (mat.field.map !== want){ mat.field.map = want; mat.field.needsUpdate = true; }
+  const terr = I('terrace');
+  const baseY = (x,z) => terr && inTerrace(x,z) ? T.y : H(x,z);
+  let propArea = 0, blvdArea = 0;
+  const pave = (name, pts, border) => {
+    if (border){ flat(g,name+'_border',pts,.06,mat.border); flat(g,name+'_field',inset(pts,1),.07,mat.field); }
+    else flat(g,name,pts,.06,mat.field);
+    return area(pts);
+  };
+  let right = 12.5, stepsL, stepsR;
+  if (!after){
+    flat(g,'driveway_asphalt',[[0,-2],[12.5,-2],[12.5,19],[0,19]],.06,mat.asphalt);
+    flat(g,'apron_concrete',[[0,24],[12.5,24],[12.5,31.6],[0,31.6]],.06,mat.concrete);
+    flat(g,'precast_landing',[[12.5,10],[18.4,10],[18.4,12.5],[12.5,12.5]],.06,mat.concrete);
+  } else {
+    const fc = I('forecourt');
+    if (fc){ right = 19.5; propArea += pave('forecourt',[[L,-2],[13,-2],[13,6],[19.5,6],[19.5,19],[L,19]],true); }
+    else { propArea += pave('driveway',[[L,-2],[12.5,-2],[12.5,19],[L,19]],false); propArea += pave('walk_landing',[[12.5,10],[18.5,10],[18.5,14],[12.5,14]],false); }
+    const ap = I('flare') ? [[L,24],[12.5,24],[15,31.6],[L-2.5,31.6]] : [[L,24],[12.5,24],[12.5,31.6],[L,31.6]];
+    if (st.blvd) blvdArea = pave('boulevard_apron',ap,fc); else flat(g,'apron_concrete',ap,.06,mat.concrete);
+    if (I('bands')){
+      flat(g,'sidewalk_band_house_side',[[L,17.8],[right,17.8],[right,19],[L,19]],.085,mat.border);
+      if (st.blvd){ const f = I('flare') ? .39 : 0; flat(g,'sidewalk_band_curb_side',[[L,24],[12.5,24],[12.5+f,25.2],[L-f,25.2]],.085,mat.border); }
+    }
+    if (I('medal')){ const [cx,cz,r] = fc ? [16.25,13.3,3] : [15.5,12,2];
+      disc(g,'medallion_ring',cx,cz,r,.09,mat.border); disc(g,'medallion',cx,cz,r-.45,.1,mat.medal); }
+  }
+  // steps
+  const wide = I('steps');
+  for (let k=0;k<4;k++){
+    const [x0,x1] = wide ? [[13.2,19.3],[13.1,19.4],[12.8,19.7],[12.3,20.2]][k] : [13.6,18.2];
+    box(g,'step_'+(k+1),wide ? mat.cap : mat.precast,x0,x1,-3,1.8-.6*(k+1),6,6+(k+1));
+  }
+  stepsL = wide ? 12.3 : 13.6; stepsR = wide ? 20.2 : 18.2;
+  // terrace
+  if (terr){
+    flat(g,'terrace_soil',[[20.5,6],[28,6],[28,0],[30,0],[30,-4],[34,-4],[34,13],[20.5,13]],0,mat.mulch,T.y);
+    const top = T.y + .35;
+    const wall = (x0,z0,x1,z1) => { const bot = Math.min(H(x0,z0),H(x1,z1)) - 1;
+      if (z0===z1){ box(g,'terrace_wall',mat.wallStone,Math.min(x0,x1)-.5,Math.max(x0,x1)+.5,bot,top,z0-.5,z0+.5); box(g,'terrace_wall_cap',mat.cap,Math.min(x0,x1)-.65,Math.max(x0,x1)+.65,top,top+.22,z0-.65,z0+.65); }
+      else { box(g,'terrace_wall',mat.wallStone,x0-.5,x0+.5,bot,top,Math.min(z0,z1)-.5,Math.max(z0,z1)+.5); box(g,'terrace_wall_cap',mat.cap,x0-.65,x0+.65,top,top+.22,Math.min(z0,z1)-.65,Math.max(z0,z1)+.65); } };
+    wall(20.5,6,20.5,13); wall(20.5,13,34,13); wall(34,13,34,-4); wall(34,-4,30,-4);
+  }
+  // parterre
+  if (I('parterre')){
+    if (!terr) flat(g,'parterre_bed',[[21,6.6],[33.8,6.6],[33.8,12.9],[21,12.9]],.04,mat.mulch);
+    const x0=21.9,x1=32.9,z0=7.4,z1=12.1, y = (x,z) => baseY(x,z);
+    const ed = [[x0,z0,x1,z0],[x1,z0,x1,z1],[x1,z1,x0,z1],[x0,z1,x0,z0],[x0,z0,x1,z1],[x0,z1,x1,z0]];
+    for (const [a,b,c,d] of ed) hedge(g,a,b,c,d,.85,1.3,y((a+c)/2,(b+d)/2));
+    const cx=(x0+x1)/2, cz=(z0+z1)/2;
+    cyl(g,'topiary_stem',mat.bark,cx,y(cx,cz),cz,.12,1.6); ball(g,'topiary_ball',mat.box,cx,y(cx,cz)+2.3,cz,1.05);
+    for (const [hx,hz] of [[24.3,cz],[30.5,cz],[cx,8.3],[cx,11.2]]) hydrangea(g,hx,y(hx,hz),hz,.8);
+    if (terr) for (const [hx,hz] of [[29.3,2.6],[29.3,-2.2]]) hydrangea(g,hx,T.y,hz,1.05);
+  } else if (after){
+    if (!terr) flat(g,'foundation_bed',[[20.5,6],[28,6],[28,8.5],[20.5,8.5]],.04,mat.mulch);
+    for (let x=21.5;x<=27.5;x+=2) ball(g,'boxwood_ball',mat.box,x,baseY(x,7.2)+.7,7.2,.85,.85);
+  }
+  if (I('evergreens')){
+    if (!terr) flat(g,'evergreen_bed',[[30.8,-4.5],[34.6,-4.5],[34.6,5],[30.8,5]],.04,mat.mulch);
+    for (const [x,z] of [[32.3,-2.3],[32.3,2.5]]) evergreen(g,x,baseY(x,z),z);
+    disc(g,'evergreen_mulch',35.6,15.4,1.9,.04,mat.mulch); evergreen(g,35.6,H(35.6,15.4),15.4);
+  }
+  // piers
+  const piers = [];
+  if (I('piers')){
+    for (const x of [L+.95, right+1.15]){ const z = 17.7, y = H(x,z); piers.push([x,y,z]);
+      box(g,'pier_stone',mat.wallStone,x-.9,x+.9,y-.6,y+3.4,z-.9,z+.9); box(g,'pier_cap',mat.cap,x-1.1,x+1.1,y+3.4,y+3.7,z-1.1,z+1.1);
+      box(g,'lantern_base',mat.metal,x-.4,x+.4,y+3.7,y+3.9,z-.4,z+.4); box(g,'lantern_glass',mat.lantern,x-.32,x+.32,y+3.9,y+5.0,z-.32,z+.32);
+      for (const [dx,dz] of [[-1,-1],[1,-1],[1,1],[-1,1]]) box(g,'lantern_frame',mat.metal,x+dx*.36-.04,x+dx*.36+.04,y+3.9,y+5,z+dz*.36-.04,z+dz*.36+.04);
+      hip(g,'lantern_roof',mat.metal,x,z,1,1,y+5,.5); }
+  }
+  if (I('urns')){ urn(g, stepsL-1.2, 10.9); urn(g, Math.min(stepsR+.2, right-1.1), 12.2); }
+  // cost + measurement labels
+  const items = [];
+  if (after){
+    const a = propArea + blvdArea; items.push([`Interlock, ${Math.round(a)} sq ft (incl. asphalt removal + base)`, a*26, a*38]);
+    if (I('medal')) items.push(['Medallion upcharge',1200,2200]);
+    if (wide) items.push(['Wider stone-clad steps',6000,11000]);
+    if (I('piers')) items.push(['Stone piers + lanterns (pair, wired)',5000,9000]);
+    if (I('urns')) items.push(['Urns + topiaries (pair)',800,1800]);
+    if (terr) items.push(['Terrace wall, ~42 lin ft + soil',42*120,42*190]);
+    if (I('parterre')) items.push(['Parterre: ~40 boxwood + hydrangeas',3000,5000]);
+    else items.push(['Foundation boxwood (4)',250,450]);
+    if (I('evergreens')) items.push(['Emerald cedars, 10 ft (3)',1200,2400]);
+    if (I('lighting')) items.push(['Landscape lighting system',3500,7000]);
+  }
+  const lab = [];
+  const at = (x,z,dy=.6) => [x, H(x,z)+dy, z];
+  lab.push(['Lot frontage 40 ft', at(-1,18.4,.3)]);
+  lab.push(['Porch → sidewalk ≈ 13 ft', at(24.5,9.5,4)]);
+  lab.push([`Driveway ${(12.5-L).toFixed(1)} ft`, at((L+12.5)/2,1,2.5)]);
+  if (after && st.ext > 0) lab.push([`+${st.ext.toFixed(1)} ft to property line`, at(L/2,15,.3)]);
+  lab.push(['Grade falls 1.5 ft →', at(35,16.5,.3)]);
+  lab.push(['Sidewalk 5 ft — unchanged', at(-9,21.5)]);
+  lab.push(['Boulevard ≈ 7.5 ft', at(31,27.8)]);
+  if (terr){ lab.push([`Wall ${(T.y+.57-H(20.5,13)).toFixed(1)} ft`, [20.5,T.y+1.2,13.8]]); lab.push([`Wall ${(T.y+.57-H(34,13)).toFixed(1)} ft`, [34,T.y+1.2,13.8]]); }
+  // night lighting
+  lights.length = 0;
+  const pt = (x,y,z,i,d=6,c=0xffc98a) => { const l = new THREE.PointLight(c,i,d,2); l.position.set(x,y,z); l.name = 'light'; g.add(l); };
+  const spot = (x,y,z,tx,ty,tz,i,a=.45) => { const l = new THREE.SpotLight(0xffd8a6,i,14,a,.7,1.6); l.position.set(x,y,z); l.target.position.set(tx,ty,tz); g.add(l); g.add(l.target); };
+  if (st.night){
+    pt(.55,7.8,-.6,2.5); pt(12.45,7.8,-.6,2.5); pt(16.7,10.6,3.2,3.5,5);
+    for (const [x,y,z] of piers) pt(x,y+4.5,z,4.5,6);
+    if (I('lighting')){
+      spot(14,1.9,6.3,14,12,5.2,40,.3); spot(27,1.9,6.3,27,12,5.2,40,.3);
+      spot(21,H(21,16)+.3,15.5,21,22,0,55,.32);
+      spot(32,H(32,10)+.3,10,31,16,0,25,.5);
+      pt(stepsL+.3,.2,10.3,1.4,2.5); pt(stepsR-.3,.2,10.3,1.4,2.5);
+    }
+  }
+  mat.lantern.emissive.set(0xffc27a); mat.lantern.emissiveIntensity = st.night ? 2.4 : 0;
+  mat.glass.emissive.set(0xffc98a); mat.glass.emissiveIntensity = st.night ? .28 : 0;
+  mat.metal.emissive.set(0x000000);
+  return { g, stats:{ width:(12.5 - L), propArea, blvdArea, after, items }, lab };
+}
+
+// ---------- assemble ----------
+const root = new THREE.Group(); root.name = 'chateau_frontage';
+const ft = new THREE.Group(); ft.name = 'scene_feet'; ft.scale.setScalar(FT); root.add(ft);
+const neigh = buildNeighbours(), linesG = buildLines();
+ft.add(buildHouse(), buildStreet(), neigh, linesG);
+let design = build().g; ft.add(design);
+stage.setObject(root);
+stage._ground.visible = false;
+const scene = stage._scene, key = stage._key, cam = stage._camera, ctl = stage._controls;
+const hemi = scene.children.find(o => o.isHemisphereLight), fill = scene.children.find(o => o.isDirectionalLight && o !== key);
+cam.near = .1; cam.far = 600; cam.updateProjectionMatrix(); ctl.maxPolarAngle = Math.PI * .495;
+key.target.position.set(5, 0, 2); scene.add(key.target);
+
+function applyEnv(){
+  const a = st.sun * Math.PI/180, el = .75, R = 50;
+  key.position.set(5 + Math.sin(a)*Math.cos(el)*R, Math.sin(el)*R, 2 + Math.cos(a)*Math.cos(el)*R);
+  const sc = key.shadow.camera; sc.left = -22; sc.right = 22; sc.top = 22; sc.bottom = -22; sc.near = 1; sc.far = 150; sc.updateProjectionMatrix();
+  if (st.night){ hemi.intensity = .16; hemi.color.set(0x8fa3c8); hemi.groundColor.set(0x1a1c22); key.intensity = .15; key.color.set(0x9fb2d6); fill.intensity = 0; stage.style.setProperty('--stage-bg','#10141c'); }
+  else { hemi.intensity = 1; hemi.color.set(0xffffff); hemi.groundColor.set(0xd8d2c4); key.intensity = 2.4; key.color.set(0xfff4e4); fill.intensity = .5; stage.style.setProperty('--stage-bg','#e7e9e8'); }
+}
+function rebuild(){
+  ft.remove(design); design.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  const r = build(); design = r.g; ft.add(design); makeLabels(r.lab);
+  neigh.visible = st.neigh; linesG.visible = st.lines;
+  applyEnv(); renderStats(r.stats); syncUI(); save();
+}
+
+const CAMS = {
+  street:{ pos:[17,5.6,64], tgt:[17,9,0] },
+  sidewalk:{ pos:[3,5.4,22], tgt:[22,8,0] },
+  corner:{ pos:[64,15,50], tgt:[14,5,2] },
+  plan:{ pos:[16,120,14], tgt:[16,0,8] }
+};
+function goCam(name, instant){
+  const c = CAMS[name], p1 = new THREE.Vector3(...c.pos).multiplyScalar(FT), t1 = new THREE.Vector3(...c.tgt).multiplyScalar(FT);
+  if (instant){ cam.position.copy(p1); ctl.target.copy(t1); ctl.update(); return; }
+  const p0 = cam.position.clone(), t0 = ctl.target.clone(), s = performance.now(); ctl.autoRotate = false;
+  const step = now => { const k = Math.min(1,(now-s)/750), e = k<.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2;
+    cam.position.lerpVectors(p0,p1,e); ctl.target.lerpVectors(t0,t1,e); if (k<1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+// ---------- UI ----------
+const IDEAS = [
+  ['forecourt','1','One paved forecourt','Driveway + walk as one field, dark border'],
+  ['herr','2','Herringbone pattern',''],
+  ['medal','2','Medallion landing at steps',''],
+  ['flare','3','Flared apron at the curb',''],
+  ['bands','4','Paver bands flanking sidewalk','Sidewalk stays untouched concrete'],
+  ['steps','5','Wider, flared steps',''],
+  ['piers','6','Stone piers with lanterns',''],
+  ['urns','7','Urns with topiaries',''],
+  ['terrace','8','Raised stone terrace','Levels the slope; wall ~1.6 ft at steps, ~2.1 ft at right'],
+  ['parterre','9','Boxwood parterre + hydrangeas',''],
+  ['evergreens','10','Tall evergreens, right corner','Frames the house, screens the hydro box'],
+  ['lighting','12','Landscape lighting','Switch to Night to see it']
+];
+const $ = id => document.getElementById(id);
+$('ideas').innerHTML = IDEAS.map(([k,n,t,d]) => `<label class="row"><input type="checkbox" data-k="${k}"><span class="num">${n}</span><span>${t}${d?`<span class="desc">${d}</span>`:''}</span></label>`).join('');
+$('pav').innerHTML = Object.entries(PAL).map(([k,p]) => `<button data-p="${k}"><i style="background:linear-gradient(135deg,#${p.f.toString(16).padStart(6,'0')} 62%,#${p.b.toString(16).padStart(6,'0')} 62%)"></i>${p.label}</button>`).join('');
+$('ideas').addEventListener('change', e => { const k = e.target.dataset.k; if (k){ st.ideas[k] = e.target.checked ? 1 : 0; rebuild(); } });
+$('mode').addEventListener('click', e => { const v = e.target.dataset.v; if (v){ st.mode = v; rebuild(); } });
+$('time').addEventListener('click', e => { const v = e.target.dataset.v; if (v){ st.night = v === 'night'; rebuild(); } });
+$('cams').addEventListener('click', e => { const c = e.target.dataset.c; if (c) goCam(c); });
+$('pav').addEventListener('click', e => { const b = e.target.closest('button'); if (b){ st.paver = b.dataset.p; rebuild(); } });
+for (const id of ['cf','cb']) $(id).addEventListener('input', e => { if (st.paver !== 'custom'){ const p = PAL[st.paver]; st.cf = '#'+p.f.toString(16).padStart(6,'0'); st.cb = '#'+p.b.toString(16).padStart(6,'0'); } st.paver = 'custom'; st[id] = e.target.value; rebuild(); });
+$('ext').addEventListener('input', e => { st.ext = +e.target.value; rebuild(); });
+$('sun').addEventListener('input', e => { st.sun = +e.target.value; applyEnv(); syncUI(); save(); });
+for (const id of ['blvd','lines','neigh','meas']) $(id).addEventListener('change', e => { st[id] = e.target.checked; rebuild(); });
+function syncUI(){
+  document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.v === st.mode));
+  document.querySelectorAll('#time button').forEach(b => b.classList.toggle('on', (b.dataset.v === 'night') === st.night));
+  document.querySelectorAll('#ideas input').forEach(i => i.checked = !!st.ideas[i.dataset.k]);
+  document.querySelectorAll('#pav button').forEach(b => b.classList.toggle('on', b.dataset.p === st.paver));
+  $('ideasWrap').classList.toggle('dis', st.mode === 'before'); $('optsWrap').classList.toggle('dis', st.mode === 'before');
+  $('ext').value = st.ext; $('extOut').textContent = st.ext.toFixed(1) + ' ft';
+  $('sun').value = st.sun; $('sunOut').textContent = st.sun + '°';
+  $('meas').checked = st.meas; $('labels').style.display = st.meas ? '' : 'none';
+  const hx = n => '#' + n.toString(16).padStart(6,'0');
+  $('cf').value = st.paver === 'custom' ? st.cf : hx(PAL[st.paver].f); $('cb').value = st.paver === 'custom' ? st.cb : hx(PAL[st.paver].b);
+  $('blvd').checked = st.blvd; $('lines').checked = st.lines; $('neigh').checked = st.neigh;
+}
+function renderStats(s){
+  $('stats').innerHTML = s.after
+    ? `Driveway width at garage: <b>${s.width.toFixed(1)} ft</b><br>Interlock on property: <b>≈ ${Math.round(s.propArea)} sq ft</b>${s.blvdArea ? `<br>Interlock in boulevard: <b>≈ ${Math.round(s.blvdArea)} sq ft</b>` : ''}`
+    : `Today: asphalt driveway <b>12.5 ft</b> wide, precast steps, open lawn.`;
+  const k = n => '$' + (Math.round(n/100)*100).toLocaleString();
+  const lo = s.items.reduce((a,i) => a+i[1], 0), hi = s.items.reduce((a,i) => a+i[2], 0);
+  $('cost').innerHTML = s.after ? s.items.map(i => `<div class="ci"><span>${i[0]}</span><span>${k(i[1])}–${k(i[2])}</span></div>`).join('') + `<div class="ci tot"><span>Total (rough)</span><span>${k(lo)}–${k(hi)}</span></div>` : '<div class="note">Switch to After to see an estimate.</div>';
+}
+// measurement labels
+let labs = [];
+function makeLabels(list){ $('labels').innerHTML = list.map(l => `<div class="lbl">${l[0]}</div>`).join(''); const els = [...$('labels').children]; labs = list.map((l,i) => ({ el:els[i], v:new THREE.Vector3(...l[1]).multiplyScalar(FT) })); }
+const pv = new THREE.Vector3();
+(function tick(){ requestAnimationFrame(tick); if (!st.meas) return; const w = stage.clientWidth, h = stage.clientHeight;
+  for (const l of labs){ pv.copy(l.v).project(cam); const vis = pv.z < 1 && Math.abs(pv.x) < 1.1 && Math.abs(pv.y) < 1.1;
+    l.el.style.display = vis ? '' : 'none'; l.vis = vis; l.sx = (pv.x+1)/2*w; l.sy = (1-pv.y)/2*h; }
+  const placed = [];
+  for (const l of labs){ if (!l.vis) continue; const bw = l.el.offsetWidth, bh = l.el.offsetHeight + 4; let y = l.sy;
+    for (let n=0; n<8; n++){ const c = placed.find(p => Math.abs(p.x - l.sx) < (p.w + bw)/2 && Math.abs(p.y - y) < bh); if (!c) break; y = c.y - bh; }
+    placed.push({ x:l.sx, y, w:bw }); l.el.style.transform = `translate(${l.sx}px,${y}px) translate(-50%,-50%)`; } })();
+// hover names
+const NAMES = [
+  [/boxwood_hedge/,"Boxwood hedge — Buxus 'Green Velvet', clipped to 16 in"],[/topiary_ball|topiary_stem/,'Boxwood standard (lollipop topiary)'],
+  [/topiary_cone/,'Boxwood cone topiary'],[/^urn/,'Cast-stone urn'],[/hydrangea/,"Hydrangea 'Annabelle' — white summer blooms, zone 3 hardy"],
+  [/boxwood_ball/,"Boxwood 'Green Mountain'"],[/emerald_cedar/,"Emerald cedar — Thuja 'Smaragd', 10–12 ft, narrow"],[/boulevard_tree/,'City boulevard tree (existing)'],
+  [/terrace_wall/,'Natural-stone terrace wall with pale stone cap'],[/pier|lantern/,'Stone pier with lantern'],[/medallion/,'Circular paver medallion'],
+  [/border|band/,'Soldier-course border (contrasting paver)'],[/field|driveway|walk_landing/,'Interlock paver field'],[/apron/,'Driveway apron (boulevard)'],
+  [/hydro_box/,'Hydro box — property line runs along its right side'],[/sidewalk/,'Municipal sidewalk — stays as is'],[/step_/,'Front steps'],[/property_line/,'Property line'],[/terrace_soil|parterre_bed|foundation_bed/,'Planting bed']
+];
+const ray = new THREE.Raycaster(), mp = new THREE.Vector2(), cv = stage._renderer.domElement, tip = $('tip');
+let pend = null;
+cv.addEventListener('pointermove', e => { pend = e; });
+cv.addEventListener('pointerleave', () => { pend = null; tip.style.display = 'none'; });
+(function hov(){ requestAnimationFrame(hov); if (!pend) return; const e = pend; pend = null; const r = cv.getBoundingClientRect();
+  mp.set((e.clientX-r.left)/r.width*2-1, -(e.clientY-r.top)/r.height*2+1); ray.setFromCamera(mp, cam);
+  const hit = ray.intersectObject(ft, true).find(h => h.object.visible && h.object.isMesh); const n = hit && NAMES.find(([re]) => re.test(hit.object.name));
+  if (n){ tip.textContent = n[1]; tip.style.display = 'block'; tip.style.left = (e.clientX-r.left+14)+'px'; tip.style.top = (e.clientY-r.top+14)+'px'; } else tip.style.display = 'none'; })();
+rebuild();
+goCam('street', true);
+</script>
+</body>
+</html>
